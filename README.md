@@ -14,4 +14,7 @@ It's fast! Much faster than Adafruit, more fexible and featured, it uses my prop
  - Full SPI Transaction (where applicable) compatible
  - Can use alternate SPI pins (where applicable)
  - User can convert his fonts/icons trough LCD Font Converter app by riuson (Vladimir)
+ - Gradient possible in some primitive.
+ - Text autocentering features.
+ - Lot of examples
 
