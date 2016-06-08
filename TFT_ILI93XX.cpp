@@ -668,15 +668,14 @@ it must not enter the fixed area otherwise undesirable image will be displayed
 boolean TFT_ILI93XX::scroll(int16_t pointer) 
 {
 
-	if (_rotation == 1 || _rotation == 3 || _rotation == 2) return 0;
-    if (pointer >= _scrollTop && pointer <= _scrollBottom) {
+    //if (pointer >= _scrollTop && pointer <= _scrollBottom) {
 		startTransaction();
         writecommand_cont(CMD_VSSTADRS);
 		//pointer += TFT_ILI93XX_OFST[_rotation][1];
         writedata16_last(pointer);
 		endTransaction();
-		return true;
-    }
+		//return true;
+    //}
 	return false;
 }
 
