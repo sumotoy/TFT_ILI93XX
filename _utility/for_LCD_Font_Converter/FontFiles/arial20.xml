@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<data name="Font" type="font">
+<data name="arial20" type="font">
     <family>Arial Narrow</family>
     <size>20</size>
     <style>Normal</style>
