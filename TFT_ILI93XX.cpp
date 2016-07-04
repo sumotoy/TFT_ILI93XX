@@ -479,12 +479,13 @@ void TFT_ILI93XX::changeMode(const enum ILI93XX_modes m)
 				return;
 			break;
 		}
-		endTransaction();
+		
 		#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			writecommand_last(CMD_NOP);
 		#else
 			disableCS();
 		#endif
+		endTransaction();
 		if (checkBacklight) backlight(!_backlight);
 	}
 }
