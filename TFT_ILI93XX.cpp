@@ -1992,11 +1992,11 @@ void TFT_ILI93XX::drawImage(int16_t x, int16_t y,const tPicture *img,const enum 
 			color = imageData[px];
 		#endif
 		if (m == TRANSPARENT){
-			if (imageData[px] <= b) skip = true;
+			if (color <= b) skip = true;
 		} else if (m == REPLACE){
-			if (imageData[px] <= b) color = _defaultBgColor;
+			if (color <= b) color = _defaultBgColor;
 		} else if (m == BOTH){
-			if (imageData[px] <= b) {
+			if (color <= b) {
 				color = _defaultBgColor;
 			} else {
 				color = _defaultFgColor;
