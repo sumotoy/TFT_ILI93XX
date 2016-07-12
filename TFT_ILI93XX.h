@@ -495,7 +495,7 @@ class TFT_ILI93XX : public Print {
 		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 		void enableCommandStream(void)
 		__attribute__((always_inline)) {
-			if (_dcState){
+			if (_dcState == 1){
 				digitalWriteFast(_dc,LOW);
 				_dcState = 0;
 			}
@@ -503,7 +503,7 @@ class TFT_ILI93XX : public Print {
 
 		void enableDataStream(void)
 		__attribute__((always_inline)) {
-			if (!_dcState){
+			if (_dcState == 0){
 				digitalWriteFast(_dc,HIGH);
 				_dcState = 1;
 			}
@@ -524,13 +524,13 @@ class TFT_ILI93XX : public Print {
 				do {
 					sr = KINETISK_SPI1.SR;
 					if (sr & 0xF0) tmp = KINETISK_SPI1.POPR;  // drain RX FIFO
-				} while ((sr & (15 << 12)) > (1 << 12));
+				} while ((sr & (15 << 12)) > (0 << 12));
 					#if defined(__K6XSPI2)
 			} else {
 				do {
 					sr = KINETISK_SPI2.SR;
 					if (sr & 0xF0) tmp = KINETISK_SPI2.POPR;  // drain RX FIFO
-				} while ((sr & (15 << 12)) > (1 << 12));
+				} while ((sr & (15 << 12)) > (0 << 12));
 					#endif
 				#endif
 			}

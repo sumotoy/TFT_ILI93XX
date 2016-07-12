@@ -264,7 +264,7 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 			if (SPI1.pinIsChipSelect(_cs)) {//currently only pin 6!!!!
 				pcs_data = SPI1.setCS(_cs);
 				//pcs_command = pcs_data | SPI1.setCS(_dc);
-				_dcState = 1;
+				_dcState = 0;
 				pinMode(_dc, OUTPUT);
 				enableDataStream();
 			} else {
