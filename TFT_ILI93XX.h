@@ -461,6 +461,9 @@ class TFT_ILI93XX : public Print {
 		uint8_t 			pcs_data, pcs_command;
 		uint8_t 			_mosi, _sclk;
 		uint8_t 			_cs;
+		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+		volatile bool		_dcState;
+		#endif
 
 		void startTransaction(void) __attribute__((always_inline)) {
 			if (_useSPI == 0){
@@ -468,9 +471,10 @@ class TFT_ILI93XX : public Print {
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
 				SPI1.beginTransaction(TFT_ILI93XXSPI);
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
 				SPI2.beginTransaction(TFT_ILI93XXSPI);
+					#endif
 				#endif
 			}
 		}
@@ -481,12 +485,30 @@ class TFT_ILI93XX : public Print {
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
 				SPI1.endTransaction();
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
-				SPI2.endTransaction();
+				SPI2.endTransaction();c
+					#endif
 				#endif
 			}
 		}
+		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+		void enableCommandStream(void)
+		__attribute__((always_inline)) {
+			if (_dcState){
+				digitalWriteFast(_dc,LOW);
+				_dcState = 0;
+			}
+		}
+
+		void enableDataStream(void)
+		__attribute__((always_inline)) {
+			if (!_dcState){
+				digitalWriteFast(_dc,HIGH);
+				_dcState = 1;
+			}
+		}
+		#endif
 
 		//Here's Paul Stoffregen magic in action...
 		void waitFifoNotFull(void) {
@@ -503,12 +525,13 @@ class TFT_ILI93XX : public Print {
 					sr = KINETISK_SPI1.SR;
 					if (sr & 0xF0) tmp = KINETISK_SPI1.POPR;  // drain RX FIFO
 				} while ((sr & (15 << 12)) > (1 << 12));
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
 				do {
 					sr = KINETISK_SPI2.SR;
 					if (sr & 0xF0) tmp = KINETISK_SPI2.POPR;  // drain RX FIFO
 				} while ((sr & (15 << 12)) > (1 << 12));
+					#endif
 				#endif
 			}
 		}
@@ -535,7 +558,7 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI1.SR = SPI_SR_EOQF;
 				SPI1_MCR = mcr;
 				while (KINETISK_SPI1.SR & 0xF0) {tmp = KINETISK_SPI1.POPR;}
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
 				while (1) {
 					sr = KINETISK_SPI2.SR;
@@ -545,6 +568,7 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI2.SR = SPI_SR_EOQF;
 				SPI2_MCR = mcr;
 				while (KINETISK_SPI2.SR & 0xF0) {tmp = KINETISK_SPI2.POPR;}
+					#endif
 				#endif
 			}
 		}
@@ -554,10 +578,12 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI0.PUSHR = c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
-				KINETISK_SPI1.PUSHR = c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+				enableCommandStream();
+				KINETISK_SPI1.PUSHR = c | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
+					#if defined(__K6XSPI2)
 			} else {
 				KINETISK_SPI2.PUSHR = c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
+					#endif
 				#endif
 			}
 			waitFifoNotFull();
@@ -568,10 +594,12 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI0.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
+				enableDataStream();
 				KINETISK_SPI1.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
 				KINETISK_SPI2.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_CONT;
+					#endif
 				#endif
 			}
 			waitFifoNotFull();
@@ -582,10 +610,12 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI0.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(1) | SPI_PUSHR_CONT;
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
+				enableDataStream();
 				KINETISK_SPI1.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(1) | SPI_PUSHR_CONT;
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
 				KINETISK_SPI2.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(1) | SPI_PUSHR_CONT;
+					#endif
 				#endif
 			}
 			waitFifoNotFull();
@@ -598,12 +628,14 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI0.PUSHR = c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
+				enableCommandStream();
 				mcr = SPI1_MCR;
-				KINETISK_SPI1.PUSHR = c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+				KINETISK_SPI1.PUSHR = c | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
+					#if defined(__K6XSPI2)
 			} else {
 				mcr = SPI2_MCR;
 				KINETISK_SPI2.PUSHR = c | (pcs_command << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
+					#endif
 				#endif
 			}
 			waitTransmitComplete(mcr);
@@ -617,12 +649,14 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI0.PUSHR = c | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
+				enableDataStream();
 				mcr = SPI1_MCR;
 				KINETISK_SPI1.PUSHR = c | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
 				mcr = SPI2_MCR;
 				KINETISK_SPI2.PUSHR = c | (pcs_data << 16) | SPI_PUSHR_CTAS(0) | SPI_PUSHR_EOQ;
+					#endif
 				#endif
 			}
 			waitTransmitComplete(mcr);
@@ -635,12 +669,14 @@ class TFT_ILI93XX : public Print {
 				KINETISK_SPI0.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(1) | SPI_PUSHR_EOQ;
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
+				enableDataStream();
 				mcr = SPI1_MCR;
 				KINETISK_SPI1.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(1) | SPI_PUSHR_EOQ;
-				#elif defined(__MK64FX512__) || defined(__MK66FX1M0__) && defined(__K6XSPI2)
+					#if defined(__K6XSPI2)
 			} else {
 				mcr = SPI2_MCR;
 				KINETISK_SPI2.PUSHR = d | (pcs_data << 16) | SPI_PUSHR_CTAS(1) | SPI_PUSHR_EOQ;
+					#endif
 				#endif
 			}
 			waitTransmitComplete(mcr);
