@@ -242,7 +242,6 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 		pcs_data = 0;
 		pcs_command = 0;
 		if ((_mosi == 11 || _mosi == 7) && (_sclk == 13 || _sclk == 14)){
-			Serial.println("use SPI0");
 			_useSPI = 0;
 			SPI.setMOSI(_mosi);
 			SPI.setSCK(_sclk);
@@ -252,11 +251,9 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 				pcs_command = pcs_data | SPI.setCS(_dc);
 			} else {
 				bitSet(_initError,1);
-				Serial.println("not pass CS, DC test");
 			}
 		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)//T4...T5 (SPI0,SPI1)
 		} else if ((_mosi == 0) && (_sclk == 32)) {
-			Serial.println("use SPI1");
 			_useSPI = 1;
 			SPI1.setMOSI(_mosi);
 			SPI1.setSCK(_sclk);
@@ -269,7 +266,6 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 				enableDataStream();
 			} else {
 				bitSet(_initError,1);
-				Serial.println("not pass CS, DC test");
 			}
 			#if defined(__K6XSPI2)//SPI2 defined?
 		} else if (_mosi == 45 && _sclk == 46){

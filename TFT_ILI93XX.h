@@ -458,6 +458,7 @@ class TFT_ILI93XX : public Print {
 
 /* ----------------- ARM (Teensy 3.0, Teensy 3.1, Teensy 3.2) ------------------------*/
 	#elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	
 		uint8_t 			pcs_data, pcs_command;
 		uint8_t 			_mosi, _sclk;
 		uint8_t 			_cs;
@@ -545,8 +546,7 @@ class TFT_ILI93XX : public Print {
 					if (sr & SPI_SR_EOQF) break;  // wait for last transmit
 					if (sr &  0xF0) tmp = KINETISK_SPI0.POPR;
 				}
-				KINETISK_SPI0.SR = SPI_SR_EOQF;
-				SPI0_MCR = mcr;
+				KINETISK_SPI0.SR = SPI_SR_EOQF; SPI0_MCR = mcr;
 				while (KINETISK_SPI0.SR & 0xF0) {tmp = KINETISK_SPI0.POPR;}
 				#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			} else if (_useSPI == 1){
@@ -555,8 +555,7 @@ class TFT_ILI93XX : public Print {
 					if (sr & SPI_SR_EOQF) break;  // wait for last transmit
 					if (sr &  0xF0) tmp = KINETISK_SPI1.POPR;
 				}
-				KINETISK_SPI1.SR = SPI_SR_EOQF;
-				SPI1_MCR = mcr;
+				KINETISK_SPI1.SR = SPI_SR_EOQF; SPI1_MCR = mcr;
 				while (KINETISK_SPI1.SR & 0xF0) {tmp = KINETISK_SPI1.POPR;}
 					#if defined(__K6XSPI2)
 			} else {
@@ -565,8 +564,7 @@ class TFT_ILI93XX : public Print {
 					if (sr & SPI_SR_EOQF) break;  // wait for last transmit
 					if (sr &  0xF0) tmp = KINETISK_SPI2.POPR;
 				}
-				KINETISK_SPI2.SR = SPI_SR_EOQF;
-				SPI2_MCR = mcr;
+				KINETISK_SPI2.SR = SPI_SR_EOQF; SPI2_MCR = mcr;
 				while (KINETISK_SPI2.SR & 0xF0) {tmp = KINETISK_SPI2.POPR;}
 					#endif
 				#endif
