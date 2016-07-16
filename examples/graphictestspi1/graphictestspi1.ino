@@ -47,7 +47,7 @@ void setup() {
 Serial.begin(38400);
 long unsigned debug_start = millis();
 while (!Serial && ((millis() - debug_start) <= 5000));
-  tft.begin(false);
+  tft.begin();
   delay(30);
   //the following it's mainly for Teensy
   //it will help you to understand if you have choosed the

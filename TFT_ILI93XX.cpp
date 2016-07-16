@@ -237,7 +237,7 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 		digitalWriteFast(_cs,HIGH);
 	#endif
 		enableDataStream();
-#elif defined(__MK20DX128__) || defined(__MK20DX256__)
+#elif defined(__MK20DX128__) || defined(__MK20DX256__)//Teensy 3.0 -> 3.2
 	if ((_mosi == 11 || _mosi == 7) && (_sclk == 13 || _sclk == 14)) {
         SPI.setMOSI(_mosi);
         SPI.setSCK(_sclk);
@@ -255,8 +255,9 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 		bitSet(_initError,1);
 		return;
 	}
-#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)//Teensy 3.4 -> 3.5
 	if ((_mosi == 11 || _mosi == 7) && (_sclk == 13 || _sclk == 14)) {
+		// ------------ SPI0 ---------------
 		_useSPI = 0;
 		SPI.setMOSI(_mosi);
 		SPI.setSCK(_sclk);
@@ -269,6 +270,9 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 			return;
 		}
 	} else if (_mosi == 0 && _sclk == 32) {
+		// ------------ SPI1 ---------------
+		// [hint], instead assign CS I'm assigning DC that will be much busy
+		// CS will be handled separately by startTransition and command/data_last
 		_useSPI = 1;
 		SPI1.setMOSI(_mosi);
 		SPI1.setSCK(_sclk);
@@ -282,6 +286,7 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 			bitSet(_initError,1);
 			return;
 		}
+	// TODO SPI2 --------------------------
 	} else {
 		bitSet(_initError,0);
 		return;
