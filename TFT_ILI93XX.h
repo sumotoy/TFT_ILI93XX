@@ -68,6 +68,8 @@
 	Triangles (filled)       187536		188524		194921
 	Rounded rects (outline)  27057		27064		34354
 	Rounded rects (filled)   631303		632290		639004
+	
+ 
 */
 
 
@@ -611,7 +613,9 @@ class TFT_ILI93XX : public Print {
 				}
 			#endif
 			waitTransmitComplete(mcr);
-			disableCS();
+			#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+				disableCS();
+			#endif
 		}
 
 
@@ -630,7 +634,9 @@ class TFT_ILI93XX : public Print {
 				}
 			#endif
 			waitTransmitComplete(mcr);
-			disableCS();
+			#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+				disableCS();
+			#endif
 		}
 
 		void writedata16_last(uint16_t d) __attribute__((always_inline)) {
@@ -648,7 +654,9 @@ class TFT_ILI93XX : public Print {
 				}
 			#endif
 			waitTransmitComplete(mcr);
-			disableCS();
+			#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+				disableCS();
+			#endif
 		}
 
 /* ----------------- ARM (XTENSA ESP8266) ------------------------*/
