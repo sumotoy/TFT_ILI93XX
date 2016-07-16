@@ -133,7 +133,7 @@ void TFT_ILI93XX::backlight(bool state)
 /*********************************************************
 ************** Var init and SPI preparation **************
 **********************************************************/
-void TFT_ILI93XX::begin(bool avoidSPIinit)
+void TFT_ILI93XX::begin(bool avoidSPIinit) 
 {
 //initialize Vars
 	uint8_t i;
@@ -237,58 +237,55 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 		digitalWriteFast(_cs,HIGH);
 	#endif
 		enableDataStream();
-#elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
-		//should start from somewhere
+#elif defined(__MK20DX128__) || defined(__MK20DX256__)
+	if ((_mosi == 11 || _mosi == 7) && (_sclk == 13 || _sclk == 14)) {
+        SPI.setMOSI(_mosi);
+        SPI.setSCK(_sclk);
+	} else {
+		bitSet(_initError,0);
+		return;
+	}
+	if (!avoidSPIinit) SPI.begin();
+	if (SPI.pinIsChipSelect(_cs, _dc)) {
+		pcs_data = SPI.setCS(_cs);
+		pcs_command = pcs_data | SPI.setCS(_dc);
+	} else {
 		pcs_data = 0;
 		pcs_command = 0;
-		if ((_mosi == 11 || _mosi == 7) && (_sclk == 13 || _sclk == 14)){
-			_useSPI = 0;
-			SPI.setMOSI(_mosi);
-			SPI.setSCK(_sclk);
-			if (!avoidSPIinit) SPI.begin();
-			if (SPI.pinIsChipSelect(_cs, _dc)) {
-				pcs_data = SPI.setCS(_cs);
-				pcs_command = pcs_data | SPI.setCS(_dc);
-			} else {
-				bitSet(_initError,1);
-			}
-		#if defined(__MK64FX512__) || defined(__MK66FX1M0__)//T4...T5 (SPI0,SPI1)
-		} else if ((_mosi == 0) && (_sclk == 32)) {
-			_useSPI = 1;
-			SPI1.setMOSI(_mosi);
-			SPI1.setSCK(_sclk);
-			if (!avoidSPIinit) SPI1.begin();
-			if (SPI1.pinIsChipSelect(_cs)) {//currently only pin 6!!!!
-				pcs_data = SPI1.setCS(_cs);
-				//pcs_command = pcs_data | SPI1.setCS(_dc);
-				_dcState = 0;
-				pinMode(_dc, OUTPUT);
-				enableDataStream();
-			} else {
-				bitSet(_initError,1);
-			}
-			#if defined(__K6XSPI2)//SPI2 defined?
-		} else if (_mosi == 45 && _sclk == 46){
-			_useSPI = 2;
-			SPI2.setMOSI(_mosi);
-			SPI2.setSCK(_sclk);
-			if (!avoidSPIinit) SPI2.begin();
-			if (SPI2.pinIsChipSelect(_cs)) {
-				pcs_data = SPI2.setCS(_cs);//currently only pin 47!!!!
-				//pcs_command = pcs_data | SPI2.setCS(_dc);
-				_dcState = 1;
-				pinMode(_dc, OUTPUT);
-				enableDataStream();
-			} else {
-				bitSet(_initError,1);
-			}
-			#endif
-		#endif
+		bitSet(_initError,1);
+		return;
+	}
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	if ((_mosi == 11 || _mosi == 7) && (_sclk == 13 || _sclk == 14)) {
+		_useSPI = 0;
+		SPI.setMOSI(_mosi);
+		SPI.setSCK(_sclk);
+		if (!avoidSPIinit) SPI.begin();
+		if (SPI.pinIsChipSelect(_cs, _dc)) {
+			pcs_data = SPI.setCS(_cs);
+			pcs_command = pcs_data | SPI.setCS(_dc);
 		} else {
-			bitSet(_initError,0);
+			bitSet(_initError,1);
 			return;
 		}
-		if (bitRead(_initError,1)) return;
+	} else if (_mosi == 0 && _sclk == 32) {
+		_useSPI = 1;
+		SPI1.setMOSI(_mosi);
+		SPI1.setSCK(_sclk);
+		pinMode(_cs, OUTPUT);
+		disableCS();
+		if (!avoidSPIinit) SPI1.begin();
+		if (SPI1.pinIsChipSelect(_dc)) {
+			pcs_data = 0;
+			pcs_command = pcs_data | SPI1.setCS(_dc);
+		} else {
+			bitSet(_initError,1);
+			return;
+		}
+	} else {
+		bitSet(_initError,0);
+		return;
+	}
 #elif defined(ESP8266)//(arm) XTENSA ESP8266
 	pinMode(_dc, OUTPUT);
 	pinMode(_cs, OUTPUT);
@@ -332,14 +329,14 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 	/* -----------------------------------------------------------
 	------------------- Chip Initialization ----------------------
 	-------------------------------------------------------------*/
-
+	
 	startTransaction();
 	//Software reset -------------------------
 	writecommand_cont(CMD_SWRESET); delay(122);//500
 	//Exit sleep -----------------------------
 	writecommand_cont(CMD_SLPOUT);  delay(5);
 	//Exit idle mode
-	writecommand_cont(CMD_IDLEOF);
+	writecommand_cont(CMD_IDLEOF); 
 	_sendInitData(CMD_EXTREG_1,TFT_ILI93XX_EXTREG_1);
 	_sendInitData(CMD_EXTREG_2,TFT_ILI93XX_EXTREG_2);
 	_sendInitData(CMD_EXTREG_3,TFT_ILI93XX_EXTREG_3);
@@ -361,7 +358,7 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 	_sendInitData(CMD_FRMCTR1,TFT_ILI93XX_FRMCTR1);
 	//Display Fuction set 5
 	_sendInitData(CMD_DFUNCTR,TFT_ILI93XX_DFUNCTR);
-	//writecommand_cont(0xF2);  writedata8_cont(0x00);
+	//writecommand_cont(0xF2);  writedata8_cont(0x00); 
 	//Default gamma curve?
 	//writecommand_cont(CMD_GAMMASET); writedata8_cont(0x01);
 	//compensate gamma
@@ -392,7 +389,7 @@ void TFT_ILI93XX::begin(bool avoidSPIinit)
 		setFont(&nullfont);
 	#endif
 	delay(30);
-
+	
 }
 
 void TFT_ILI93XX::_sendInitData(const uint8_t cmd,const uint8_t data[])
@@ -415,7 +412,7 @@ very basic errors:
 0b00000010: Wrong CS pin (only for some MCU's)
 0b10000000: Display NOT supported (Only for multi-instances)
 */
-uint8_t TFT_ILI93XX::getErrorCode(void)
+uint8_t TFT_ILI93XX::getErrorCode(void) 
 {
 	return _initError;
 }
@@ -435,14 +432,14 @@ void TFT_ILI93XX::clearMemory(void)
 	#else
 		disableCS();
 	#endif
-
+	
 	endTransaction();
 }
 
 /*
 This change the mode of the display as:
 	NORMAL: Normal mode, backlight on automatically
-	PARTIAL: Enable partial mode to work in portions of display (NOTE: Not all display are able to
+	PARTIAL: Enable partial mode to work in portions of display (NOTE: Not all display are able to 
 	set the non-partial mode BLACK, this due hardware problem on some display)
 	IDLE: This is confusing (ILI designer delire), IDLE consume less current and shows less color
 	SLEEP: Put display driver section in sleep but rest of the logic works, it also turn off display (if
@@ -451,7 +448,7 @@ This change the mode of the display as:
 	DISP_ON: Turn on display (if off) and enable backlight pin if used
 	DISP_OFF: The opposite of above
 */
-void TFT_ILI93XX::changeMode(const enum ILI93XX_modes m)
+void TFT_ILI93XX::changeMode(const enum ILI93XX_modes m) 
 {
 	if (m != _currentMode){
 		bool checkBacklight = false;
@@ -513,7 +510,7 @@ void TFT_ILI93XX::changeMode(const enum ILI93XX_modes m)
 				return;
 			break;
 		}
-
+		
 		#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 			writecommand_last(CMD_NOP);
 		#else
@@ -525,12 +522,12 @@ void TFT_ILI93XX::changeMode(const enum ILI93XX_modes m)
 }
 
 
-uint8_t TFT_ILI93XX::getMode(void)
+uint8_t TFT_ILI93XX::getMode(void) 
 {
 	return _currentMode;
 }
 
-void TFT_ILI93XX::setArea(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
+void TFT_ILI93XX::setArea(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) 
 {
 	startTransaction();
 	setAddrWindow_cont(x0,y0,x1,y1);
@@ -542,7 +539,7 @@ void TFT_ILI93XX::setArea(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 	endTransaction();
 }
 
-void TFT_ILI93XX::setPartialArea(uint16_t top,uint16_t bott)
+void TFT_ILI93XX::setPartialArea(uint16_t top,uint16_t bott) 
 {
 	startTransaction();
 	writecommand_cont(CMD_PARTAREA);
@@ -553,13 +550,13 @@ void TFT_ILI93XX::setPartialArea(uint16_t top,uint16_t bott)
 
 
 
-uint8_t TFT_ILI93XX::getRotation(void)
+uint8_t TFT_ILI93XX::getRotation(void)  
 {
 	return _rotation;
 	//return TFT_ILI93XX_ROTCOMP[_rotation];//compensate rotation for display upsdide down, etc.
 }
 
-void TFT_ILI93XX::setRotation(uint8_t m)
+void TFT_ILI93XX::setRotation(uint8_t m) 
 {
 	_rotation = m % 4; // can't be higher than 3
 	//_Mactrl_Data &= ~(0xF8);//clear bit 3..7,  F0 -> clear bit 4...7
@@ -572,14 +569,14 @@ void TFT_ILI93XX::setRotation(uint8_t m)
 		_height = TFT_ILI93XX_TFTHEIGHT;
 		defineScrollArea(_scrollTop,_scrollBottom);
 	} else if (_rotation == 1){
-		//bitSet(_Mactrl_Data,6);
+		//bitSet(_Mactrl_Data,6); 
 		//bitSet(_Mactrl_Data,5);
 		_width  = TFT_ILI93XX_TFTHEIGHT;
 		_height = TFT_ILI93XX_TFTWIDTH;
 		MactrlData = MADCTL_MV | TFT_ILI93XX_CSPACE;
 		_portrait = true;
 	} else if (_rotation == 2){
-		//bitSet(_Mactrl_Data,7);
+		//bitSet(_Mactrl_Data,7); 
 		//bitSet(_Mactrl_Data,6);
 		_width  = TFT_ILI93XX_TFTWIDTH;
 		_height = TFT_ILI93XX_TFTHEIGHT;
@@ -587,7 +584,7 @@ void TFT_ILI93XX::setRotation(uint8_t m)
 		_portrait = false;
 		defineScrollArea(_scrollTop,_scrollBottom);
 	} else {
-		//bitSet(_Mactrl_Data,7);
+		//bitSet(_Mactrl_Data,7); 
 		//bitSet(_Mactrl_Data,5);
 		_width  = TFT_ILI93XX_TFTHEIGHT;
 		_height = TFT_ILI93XX_TFTWIDTH;
@@ -605,7 +602,7 @@ void TFT_ILI93XX::setRotation(uint8_t m)
 
 /*
 //00..FF
-void TFT_ILI93XX::setBrightness(uint8_t val)
+void TFT_ILI93XX::setBrightness(uint8_t val) 
 {
 	startTransaction();
 	writecommand_cont(CMD_WDBRIGHT);
@@ -613,7 +610,7 @@ void TFT_ILI93XX::setBrightness(uint8_t val)
 	endTransaction();
 }
 
-void TFT_ILI93XX::test()
+void TFT_ILI93XX::test() 
 {
 	startTransaction();
 	writecommand_cont(0x53);
@@ -625,7 +622,7 @@ void TFT_ILI93XX::test()
 int16_t TFT_ILI93XX::width(void) const {
 	return _width;
 }
-
+ 
 int16_t TFT_ILI93XX::height(void) const {
 	return _height;
 }
@@ -633,7 +630,7 @@ int16_t TFT_ILI93XX::height(void) const {
 int16_t TFT_ILI93XX::cgWidth(void) const {
 	return TFT_ILI93XX_TFTWIDTH;
 }
-
+ 
 int16_t TFT_ILI93XX::cgHeight(void) const {
 	return TFT_ILI93XX_TFTHEIGHT;
 }
@@ -685,12 +682,12 @@ void TFT_ILI93XX::defineScrollArea(int16_t tfa, int16_t bfa)
 }
 
 
-uint8_t TFT_ILI93XX::getScrollDirection(void)
+uint8_t TFT_ILI93XX::getScrollDirection(void) 
 {
 	return _scrollDir;
 }
 
-void TFT_ILI93XX::setScrollDirection(uint8_t dir)
+void TFT_ILI93XX::setScrollDirection(uint8_t dir) 
 {
 	_scrollDir = dir % 2;
 }
@@ -700,7 +697,7 @@ void TFT_ILI93XX::setScrollDirection(uint8_t dir)
 Since the value of the Vertical Scrolling Start Address is absolute
 it must not enter the fixed area otherwise undesirable image will be displayed
 */
-boolean TFT_ILI93XX::scroll(int16_t pointer)
+boolean TFT_ILI93XX::scroll(int16_t pointer) 
 {
 
     //if (pointer >= _scrollTop && pointer <= _scrollBottom) {
@@ -794,23 +791,23 @@ uint16_t TFT_ILI93XX::colorInterpolation(uint8_t r1,uint8_t g1,uint8_t b1,uint8_
 	);
 }
 
-void TFT_ILI93XX::setBackground(uint16_t color)
+void TFT_ILI93XX::setBackground(uint16_t color) 
 {
 	_defaultBgColor = color;
 }
 
 
-void TFT_ILI93XX::setForeground(uint16_t color)
+void TFT_ILI93XX::setForeground(uint16_t color) 
 {
 	_defaultFgColor = color;
 }
 
-uint16_t TFT_ILI93XX::getBackground(void)
+uint16_t TFT_ILI93XX::getBackground(void) 
 {
 	return _defaultBgColor;
 }
 
-uint16_t TFT_ILI93XX::getForeground(void)
+uint16_t TFT_ILI93XX::getForeground(void) 
 {
 	return _defaultFgColor;
 }
@@ -819,7 +816,7 @@ uint16_t TFT_ILI93XX::getForeground(void)
 ****************** Graphic Functions *********************
 **********************************************************/
 
-void TFT_ILI93XX::drawPixel(int16_t x, int16_t y, uint16_t color)
+void TFT_ILI93XX::drawPixel(int16_t x, int16_t y, uint16_t color) 
 {
 	if (boundaryCheck(x,y)) return;
 	if ((x < 0) || (y < 0)) return;
@@ -835,7 +832,7 @@ void TFT_ILI93XX::drawPixel(int16_t x, int16_t y, uint16_t color)
 
 
 
-void TFT_ILI93XX::fillScreen(uint16_t color)
+void TFT_ILI93XX::fillScreen(uint16_t color) 
 {
 	startTransaction();
 	setAddrWindow_cont(
@@ -850,14 +847,14 @@ void TFT_ILI93XX::fillScreen(uint16_t color)
 	#else
 		disableCS();
 	#endif
-
+	
 	endTransaction();
 }
 
 
 
 //with gradient
-void TFT_ILI93XX::fillScreen(uint16_t color1,uint16_t color2)
+void TFT_ILI93XX::fillScreen(uint16_t color1,uint16_t color2) 
 {
 	startTransaction();
 	if (color1 != color2){
@@ -876,12 +873,12 @@ void TFT_ILI93XX::fillScreen(uint16_t color1,uint16_t color2)
 	#else
 		disableCS();
 	#endif
-
+	
 	endTransaction();
 }
 
 
-void TFT_ILI93XX::clearScreen(void)
+void TFT_ILI93XX::clearScreen(void) 
 {
 	fillScreen(_defaultBgColor);
 	_cursorX = _cursorY = 0;
@@ -892,7 +889,7 @@ draw fast vertical line
 this uses fast contiguos commands method but opens SPi transaction and enable CS
 then set CS hi and close transaction
 */
-void TFT_ILI93XX::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
+void TFT_ILI93XX::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) 
 {
 	// Rudimentary clipping
 	if (boundaryCheck(x,y)) return;
@@ -914,7 +911,7 @@ draw fast horizontal line
 this uses fast contiguos commands method but opens SPi transaction and enable CS
 then set CS hi and close transaction
 */
-void TFT_ILI93XX::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
+void TFT_ILI93XX::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) 
 {
 	// Rudimentary clipping
 	if (boundaryCheck(x,y)) return;
@@ -933,7 +930,7 @@ void TFT_ILI93XX::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
 /*
 fill RECT
 */
-void TFT_ILI93XX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
+void TFT_ILI93XX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) 
 {
 	if (boundaryCheck(x,y)) return;
 	//if (((x + w) - 1) >= _width)  w = _width  - x;
@@ -953,7 +950,7 @@ void TFT_ILI93XX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t 
 /*
 fill RECT with gradient
 */
-void TFT_ILI93XX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color1,uint16_t color2)
+void TFT_ILI93XX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color1,uint16_t color2) 
 {
 	if (boundaryCheck(x,y)) return;
 	//if (((x + w) - 1) >= _width)  w = _width  - x;
@@ -972,7 +969,7 @@ void TFT_ILI93XX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t 
 
 
 //Updated, new way is fast!!!
-void TFT_ILI93XX::fillRect_cont(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color1,uint16_t color2)
+void TFT_ILI93XX::fillRect_cont(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color1,uint16_t color2) 
 {
 	//uint16_t colorTemp;
 	if (w < 2 && h < 2){ drawPixel_cont(x,y,color1); return; }
@@ -988,14 +985,14 @@ void TFT_ILI93XX::fillRect_cont(int16_t x, int16_t y, int16_t w, int16_t h, uint
 		uint8_t rR,gG,bB;
 		uint16_t tot = h;
 		uint16_t wtemp = w;
-		do {
+		do { 
 			pos2 = (float)pos/tot;
 			rR = (((1.0 - pos2) * r1) + (pos2 * r2));
 			gG = (((1.0 - pos2) * g1) + (pos2 * g2));
 			bB = (((1.0 - pos2) * b1) + (pos2 * b2));
 			#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
-				do {
-					writedata16_cont(Color565(rR,gG,bB));
+				do { 
+					writedata16_cont(Color565(rR,gG,bB)); 
 				} while (--wtemp > 0);
 				wtemp = w;
 			#else
@@ -1076,8 +1073,8 @@ void TFT_ILI93XX::drawLine_cont(int16_t x0, int16_t y0,int16_t x1, int16_t y1, u
 				y0 += ystep;
 				err += dx;
 			}
-			#if defined(ESP8266)
-				yield();
+			#if defined(ESP8266)   	
+				yield(); 	
 			#endif
 		}
 		if (x0 > xbegin + 1) drawFastVLine_cont(y0, xbegin, x0 - xbegin, color);
@@ -1095,8 +1092,8 @@ void TFT_ILI93XX::drawLine_cont(int16_t x0, int16_t y0,int16_t x1, int16_t y1, u
 				y0 += ystep;
 				err += dx;
 			}
-			#if defined(ESP8266)
-				yield();
+			#if defined(ESP8266)   	
+				yield(); 	
 			#endif
 		}
 		if (x0 > xbegin + 1) drawFastHLine_cont(xbegin, y0, x0 - xbegin, color);
@@ -1112,7 +1109,7 @@ void TFT_ILI93XX::drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t 
 		drawFastHLine_cont(x, y, w, color);
 		drawFastHLine_cont(x, (y+h)-1, w, color);
 		drawFastVLine_cont(x, y, h, color);
-		drawFastVLine_cont((x+w)-1, y, h, color);
+		drawFastVLine_cont((x+w)-1, y, h, color);	
 	#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 		writecommand_last(CMD_NOP);
 	#else
@@ -1122,7 +1119,7 @@ void TFT_ILI93XX::drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t 
 }
 
 
-void TFT_ILI93XX::drawArcHelper(uint16_t cx, uint16_t cy, uint16_t radius, uint16_t thickness, float start, float end, uint16_t color)
+void TFT_ILI93XX::drawArcHelper(uint16_t cx, uint16_t cy, uint16_t radius, uint16_t thickness, float start, float end, uint16_t color) 
 {
 	int16_t xmin = 65535;
 	int16_t xmax = -32767;
@@ -1271,8 +1268,8 @@ void TFT_ILI93XX::drawArcHelper(uint16_t cx, uint16_t cy, uint16_t radius, uint1
 														// which we haven't found in the loop so the last pixel in a column must be the end
 				drawFastVLine_cont(cx + x, cy + y2s, ymax - y2s + 1, color);
 			}
-			#if defined(ESP8266)
-				yield();
+			#if defined(ESP8266)   	
+				yield(); 	
 			#endif
 		}
 	#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
@@ -1293,7 +1290,7 @@ void TFT_ILI93XX::setArcParams(float arcAngleMax, int arcAngleOffset)
 
 
 /**************************************************************************/
-/*!
+/*!	
 		sin e cos helpers
 		[private]
 		from my RA8875 library
@@ -1342,8 +1339,8 @@ void TFT_ILI93XX::drawEllipse(int16_t cx,int16_t cy,int16_t radiusW,int16_t radi
 			ellipseError += xchange;
 			xchange += twoBSquare;
 		}
-		#if defined(ESP8266)
-			yield();
+		#if defined(ESP8266)   	
+			yield(); 	
 		#endif
     }
     x = 0;
@@ -1365,8 +1362,8 @@ void TFT_ILI93XX::drawEllipse(int16_t cx,int16_t cy,int16_t radiusW,int16_t radi
 			ellipseError += ychange;
 			ychange += twoASquare;
 		}
-		#if defined(ESP8266)
-			yield();
+		#if defined(ESP8266)   	
+			yield(); 	
 		#endif
     }
 	#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
@@ -1387,7 +1384,7 @@ void TFT_ILI93XX::plot4points_cont(uint16_t cx, uint16_t cy, uint16_t x, uint16_
 }
 
 //fast
-void TFT_ILI93XX::drawCircle_cont(int16_t x,int16_t y,int16_t radius,uint8_t cornername,uint16_t color)
+void TFT_ILI93XX::drawCircle_cont(int16_t x,int16_t y,int16_t radius,uint8_t cornername,uint16_t color) 
 {
 	int16_t f			= 1 - radius;
 	int16_t ddF_x		= 1;
@@ -1422,7 +1419,7 @@ void TFT_ILI93XX::drawCircle_cont(int16_t x,int16_t y,int16_t radius,uint8_t cor
 			if (cornername & 0x4) {
 				drawPixel_cont(x + deltax, y + deltay, color);
 				drawPixel_cont(x + deltay, y + deltax, color);
-			}
+			} 
 			if (cornername & 0x2) {
 				drawPixel_cont(x + deltax, y - deltay, color);
 				drawPixel_cont(x + deltay, y - deltax, color);
@@ -1436,15 +1433,15 @@ void TFT_ILI93XX::drawCircle_cont(int16_t x,int16_t y,int16_t radius,uint8_t cor
 				drawPixel_cont(x - deltax, y - deltay, color);
 			}
 		}
-		#if defined(ESP8266)
-			yield();
+		#if defined(ESP8266)   	
+			yield(); 	
 		#endif
 	}
 }
 
 
 //fast
-void TFT_ILI93XX::fillCircle_cont(int16_t x, int16_t y, int16_t radius, uint8_t cornername, int16_t delta, uint16_t color)
+void TFT_ILI93XX::fillCircle_cont(int16_t x, int16_t y, int16_t radius, uint8_t cornername, int16_t delta, uint16_t color) 
 {
 	int16_t f     		= 1 - radius;
 	int16_t ddF_x 		= 1;
@@ -1470,8 +1467,8 @@ void TFT_ILI93XX::fillCircle_cont(int16_t x, int16_t y, int16_t radius, uint8_t 
 			drawFastVLine_cont(x-deltax, y-deltay, 2*deltay+1+delta, color);
 			drawFastVLine_cont(x-deltay, y-deltax, 2*deltax+1+delta, color);
 		}
-		#if defined(ESP8266)
-			yield();
+		#if defined(ESP8266)   	
+			yield(); 	
 		#endif
 	}
 }
@@ -1489,7 +1486,7 @@ void TFT_ILI93XX::drawCircle(int16_t x, int16_t y, int16_t radius, uint16_t colo
 	endTransaction();
 }
 
-void TFT_ILI93XX::fillCircle(int16_t x, int16_t y, int16_t radius,uint16_t color)
+void TFT_ILI93XX::fillCircle(int16_t x, int16_t y, int16_t radius,uint16_t color) 
 {
 	//if (x+(radius*2) > _width || y+(radius*2) > _height) return;
 	startTransaction();//open SPI comm
@@ -1505,7 +1502,7 @@ void TFT_ILI93XX::fillCircle(int16_t x, int16_t y, int16_t radius,uint16_t color
 
 
 //fast
-void TFT_ILI93XX::drawRoundRect(int16_t x, int16_t y, int16_t w,int16_t h, int16_t radius, uint16_t color)
+void TFT_ILI93XX::drawRoundRect(int16_t x, int16_t y, int16_t w,int16_t h, int16_t radius, uint16_t color) 
 {
 	if (x+w >= _width || y+h > _height) return;
 	//if (x+w-radius-1 < 0 || y+h-radius-1 < 0) return;
@@ -1529,14 +1526,14 @@ void TFT_ILI93XX::drawRoundRect(int16_t x, int16_t y, int16_t w,int16_t h, int16
 
 
 //fast
-void TFT_ILI93XX::fillRoundRect(int16_t x, int16_t y, int16_t w,int16_t h, int16_t radius, uint16_t color)
+void TFT_ILI93XX::fillRoundRect(int16_t x, int16_t y, int16_t w,int16_t h, int16_t radius, uint16_t color) 
 {
 	if (x+w >= _width || y+h > _height) return;
 	if (radius < 2) {
 		fillRect(x,y,w,h,color);
 		return;
 	}
-
+	
 	startTransaction();
 	fillRect_cont(x+radius, y, w-2*radius, h, color, color);
 	fillCircle_cont(x+w-radius-1, y+radius, radius, 1, h-2*radius-1, color);
@@ -1550,7 +1547,7 @@ void TFT_ILI93XX::fillRoundRect(int16_t x, int16_t y, int16_t w,int16_t h, int16
 }
 
 
-void TFT_ILI93XX::drawQuad(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2,int16_t x3, int16_t y3, uint16_t color)
+void TFT_ILI93XX::drawQuad(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2,int16_t x3, int16_t y3, uint16_t color) 
 {
 	startTransaction();//open SPI comm
 	drawLine_cont(x0, y0, x1, y1, color);//low 1
@@ -1566,7 +1563,7 @@ void TFT_ILI93XX::drawQuad(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t
 }
 
 
-void TFT_ILI93XX::fillQuad(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, int16_t x3, int16_t y3, uint16_t color,bool triangled)
+void TFT_ILI93XX::fillQuad(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, int16_t x3, int16_t y3, uint16_t color,bool triangled) 
 {
 	startTransaction();//open SPI comm
     fillTriangle_cont(x0,y0,x1,y1,x2,y2,color);
@@ -1581,13 +1578,13 @@ void TFT_ILI93XX::fillQuad(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t
 }
 
 void TFT_ILI93XX::drawPolygon(int16_t x, int16_t y, uint8_t sides, int16_t diameter, float rot, uint16_t color)
-{
+{ 
 	sides = (sides > 2 ? sides : 3);
 	const float dtr = (PI/180.0) + PI;
 	float rads = 360.0 / sides;//points spacd equally
 	uint8_t i;
 	startTransaction();
-	for (i = 0; i < sides; i++) {
+	for (i = 0; i < sides; i++) { 
 		drawLine_cont(
 			x + (sin((i*rads + rot) * dtr) * diameter),
 			y + (cos((i*rads + rot) * dtr) * diameter),
@@ -1610,7 +1607,7 @@ void TFT_ILI93XX::drawMesh(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t 
 	//if (((y + h) - 1) >= _height) h = _height - y;
 	w = sizeCheck(x,w,_width);
 	h = sizeCheck(y,h,_height);
-
+	
 	int16_t n, m;
 
 	if (w < x) {n = w; w = x; x = n;}
@@ -1629,7 +1626,7 @@ void TFT_ILI93XX::drawMesh(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t 
 	endTransaction();//close SPI comm
 }
 
-void TFT_ILI93XX::drawTriangle(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, uint16_t color)
+void TFT_ILI93XX::drawTriangle(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, uint16_t color) 
 {
 	startTransaction();
 	drawLine_cont(x0, y0, x1, y1, color);
@@ -1644,7 +1641,7 @@ void TFT_ILI93XX::drawTriangle(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int
 }
 
 //85% fast
-void TFT_ILI93XX::fillTriangle(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, uint16_t color)
+void TFT_ILI93XX::fillTriangle(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, uint16_t color) 
 {
 	startTransaction();
 	fillTriangle_cont(x0,y0,x1,y1,x2,y2,color);//
@@ -1656,7 +1653,7 @@ void TFT_ILI93XX::fillTriangle(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int
 	endTransaction();//close SPI comm
 }
 
-void TFT_ILI93XX::fillTriangle_cont(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, uint16_t color)
+void TFT_ILI93XX::fillTriangle_cont(int16_t x0, int16_t y0,int16_t x1, int16_t y1,int16_t x2, int16_t y2, uint16_t color) 
 {
 	int16_t a, b, y, last;
 
@@ -1693,7 +1690,7 @@ void TFT_ILI93XX::fillTriangle_cont(int16_t x0, int16_t y0,int16_t x1, int16_t y
 
 	if (y1 == y2) {
 		last = y1;
-	} else {
+	} else { 
 		last = y1-1;
 	}
 
@@ -1740,7 +1737,7 @@ void TFT_ILI93XX::drawLineAngle(int16_t x, int16_t y, int angle, uint8_t length,
 		x,
 		y,
 		x + (length * cosDeg_helper(angle + offset)),//_angle_offset
-		y + (length * sinDeg_helper(angle + offset)),
+		y + (length * sinDeg_helper(angle + offset)), 
 		color);
 	}
 }
@@ -1767,14 +1764,14 @@ void TFT_ILI93XX::drawLineAngle(int16_t x, int16_t y, int angle, uint8_t start, 
 		x + start * cosDeg_helper(angle + offset),//_angle_offset
 		y + start * sinDeg_helper(angle + offset),
 		x + (start + length) * cosDeg_helper(angle + offset),
-		y + (start + length) * sinDeg_helper(angle + offset),
+		y + (start + length) * sinDeg_helper(angle + offset), 
 		color);
 	}
 }
 
 /**************************************************************************/
 /*!
-      ringMeter
+      ringMeter 
 	  (adapted from Alan Senior (thanks man!))
 	  from my RA8875 library
 	  it create a ring meter with a lot of personalizations,
@@ -1847,7 +1844,7 @@ void TFT_ILI93XX::ringMeter(int val, int minV, int maxV, uint8_t x, uint8_t y, u
 				break; // Red to blue (air cond reverse)
 			case 7:
 				colour = gradient(map(i, -angle, angle, 35, 127));
-				break; // cyan to red
+				break; // cyan to red 
 			case 8:
 				colour = colorInterpolation(0,0,0,255,255,255,map(i,-angle,angle,0,w),w);
 				break; // black to white
@@ -1889,7 +1886,7 @@ void TFT_ILI93XX::ringMeter(int val, int minV, int maxV, uint8_t x, uint8_t y, u
 	if (strcmp(units, "none") != 0){
 		//erase internal background
 		if (angle > 90) {
-			fillCircle(x, y, r - w, _backColor);
+			fillCircle(x, y, r - w, _backColor); 
 		} else {
 			fillCurve(x, y + getFontHeight() / 2, r - w, r - w, 1, _backColor);
 			fillCurve(x, y + getFontHeight() / 2, r - w, r - w, 2, _backColor);
@@ -1913,7 +1910,7 @@ void TFT_ILI93XX::ringMeter(int val, int minV, int maxV, uint8_t x, uint8_t y, u
 }
 
 //fast
-void TFT_ILI93XX::startPushData(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
+void TFT_ILI93XX::startPushData(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) 
 {
 	startTransaction();
 	setAddrWindow_cont(x0,y0,x1,y1);
@@ -1921,13 +1918,13 @@ void TFT_ILI93XX::startPushData(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t 
 
 
 //fast
-void TFT_ILI93XX::pushData(uint16_t color)
+void TFT_ILI93XX::pushData(uint16_t color) 
 {
 	writedata16_cont(color);
 }
 
 //fast
-void TFT_ILI93XX::endPushData()
+void TFT_ILI93XX::endPushData() 
 {
 	#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 		writecommand_last(CMD_NOP);
@@ -1938,7 +1935,7 @@ void TFT_ILI93XX::endPushData()
 }
 
 //fast
-void TFT_ILI93XX::pushColor(uint16_t color)
+void TFT_ILI93XX::pushColor(uint16_t color) 
 {
 	startTransaction();
 	writedata16_last(color);
@@ -2010,16 +2007,16 @@ void TFT_ILI93XX::drawImage(int16_t x, int16_t y,const tPicture *img,const enum 
 		//uint8_t		dataDepth	= img->image_depth;//not yet
 		//uint8_t		dataComp	= img->image_comp;//not yet
 	#endif
-
+	
 	iWidth -= 1;
 	iHeight -= 1;
 	if (iWidth < 1 || iHeight < 1) return;//cannot be
 	if (x + iWidth >= _width || y + iHeight >= _height) return;//cannot be
-
+	
 	startTransaction();
 	setAddrWindow_cont(x,y,iWidth+x,iHeight+y);
-
-	do {
+	
+	do { 
 		#if defined(_FORCE_PROGMEM__)
 			color = pgm_read_word(&imageData[px]);
 		#else
@@ -2036,25 +2033,25 @@ void TFT_ILI93XX::drawImage(int16_t x, int16_t y,const tPicture *img,const enum 
 				color = _defaultFgColor;
 			}
 		}
-
+		
 		if (!skip) {
-			writedata16_cont(color);
+			writedata16_cont(color); 
 		} else {
 			setAddrWindow_cont(x+currentX,y+currentY,(iWidth+x),(iHeight+y));//constrain window
 			skip = false;
 		}
-
+		
 		if (currentX == iWidth){
 			currentX = 0;
 			currentY++;
 		} else {
 			currentX++;
 		}
-
+		
 		px++;
-
+		
 	} while (--datalen > 0);
-
+	
 	#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 		writecommand_last(CMD_NOP);
 	#else
@@ -2064,7 +2061,7 @@ void TFT_ILI93XX::drawImage(int16_t x, int16_t y,const tPicture *img,const enum 
 }
 
 
-void TFT_ILI93XX::drawBitmap(int16_t x, int16_t y,const uint8_t *bitmap, int16_t w, int16_t h,uint16_t color)
+void TFT_ILI93XX::drawBitmap(int16_t x, int16_t y,const uint8_t *bitmap, int16_t w, int16_t h,uint16_t color) 
 {
 	int16_t i, j;
 	int16_t byteWidth = (w + 7) / 8;
@@ -2072,13 +2069,13 @@ void TFT_ILI93XX::drawBitmap(int16_t x, int16_t y,const uint8_t *bitmap, int16_t
 		for (i = 0; i < w; i++ ) {
 			if (pgm_read_byte(bitmap + j * byteWidth + i / 8) & (128 >> (i & 7))) drawPixel(x + i, y + j, color);
 		}
-		#if defined(ESP8266)
-			yield();
+		#if defined(ESP8266)   	
+			yield(); 	
 		#endif
 	}
 }
 
-void TFT_ILI93XX::drawBitmap(int16_t x, int16_t y,const uint8_t *bitmap, int16_t w, int16_t h,uint16_t color, uint16_t bg)
+void TFT_ILI93XX::drawBitmap(int16_t x, int16_t y,const uint8_t *bitmap, int16_t w, int16_t h,uint16_t color, uint16_t bg) 
 {
 	int16_t i, j;
 	int16_t byteWidth = (w + 7) / 8;
@@ -2090,8 +2087,8 @@ void TFT_ILI93XX::drawBitmap(int16_t x, int16_t y,const uint8_t *bitmap, int16_t
 				drawPixel(x + i, y + j, bg);
 		}
     }
-	#if defined(ESP8266)
-		yield();
+	#if defined(ESP8266)   	
+		yield(); 	
 	#endif
   }
 }
@@ -2099,7 +2096,7 @@ void TFT_ILI93XX::drawBitmap(int16_t x, int16_t y,const uint8_t *bitmap, int16_t
 /*********************************************************
 ********************  Text Functions *********************
 **********************************************************/
-void TFT_ILI93XX::setCursor(int16_t x, int16_t y,enum ILI93XX_centerMode c)
+void TFT_ILI93XX::setCursor(int16_t x, int16_t y,enum ILI93XX_centerMode c) 
 {
 	if (c == NORM){// No centering
 		if (x == CENTER || y == CENTER) setCursor(x,y,SCREEN);
@@ -2135,38 +2132,38 @@ void TFT_ILI93XX::setCursor(int16_t x, int16_t y,enum ILI93XX_centerMode c)
 	setArea(0x0000,0x0000,x,y);
 }
 
-void TFT_ILI93XX::getCursor(int16_t &x, int16_t &y)
+void TFT_ILI93XX::getCursor(int16_t &x, int16_t &y) 
 {
 	x = _cursorX;
 	y = _cursorY;
 }
 
 
-void TFT_ILI93XX::setTextScale(uint8_t s)
+void TFT_ILI93XX::setTextScale(uint8_t s) 
 {
 	_textScaleX = _textScaleY = (s > 0) ? s : 1;
 }
 
 
-void TFT_ILI93XX::setTextScale(uint8_t sx,uint8_t sy)
+void TFT_ILI93XX::setTextScale(uint8_t sx,uint8_t sy) 
 {
 	_textScaleX = (sx > 0) ? sx : 1;
 	_textScaleY = (sy > 0) ? sy : 1;
 }
 
-void TFT_ILI93XX::setTextColor(uint16_t color)
+void TFT_ILI93XX::setTextColor(uint16_t color) 
 {
 	_textForeground = _textBackground = color;
 }
 
-void TFT_ILI93XX::setTextColor(uint16_t frgrnd, uint16_t bckgnd)
+void TFT_ILI93XX::setTextColor(uint16_t frgrnd, uint16_t bckgnd) 
 {
 	_textForeground = frgrnd;
 	_textBackground = bckgnd;
 }
 
 
-void TFT_ILI93XX::setTextWrap(boolean w)
+void TFT_ILI93XX::setTextWrap(boolean w) 
 {
 	_textWrap = w;
 }
@@ -2241,7 +2238,7 @@ int TFT_ILI93XX::_STRlen_helper(const char* buffer,int len)
 }
 
 
-void TFT_ILI93XX::setFont(const tFont *font)
+void TFT_ILI93XX::setFont(const tFont *font) 
 {
 	_currentFont = font;
 	_fontRemapOffset =  _currentFont->remap_code;
@@ -2355,8 +2352,8 @@ void TFT_ILI93XX::_textWrite(const char* buffer, uint16_t len)
 			break;
 		}
 		/*
-	#if defined(ESP8266)
-		yield();
+	#if defined(ESP8266)   	
+		yield(); 	
 	#endif
 	*/
 	}//end loop
@@ -2435,7 +2432,7 @@ bool TFT_ILI93XX::_renderSingleChar(const char c)
 				charW = _currentFont->chars[charIndex].image->image_width;
 			#endif
 			//---------------------------------- WRAP is ON? --------------------------------
-			if (_textWrap){//wrap, goes in the new line
+			if (_textWrap){//wrap, goes in the new line 
 				if (!_portrait && (_cursorX + (charW * _textScaleX) + (_charSpacing * _textScaleX)) >= _width){
 					_cursorX = 0;
 					_cursorY += (_currentFont->font_height * _textScaleY) + (_fontInterline * _textScaleY);
@@ -2506,7 +2503,7 @@ This is the draw char function (version for uncompressed font)
 It detects blank and filled lines and render separately, this is the first
 accelleration step of the unique (and currently under commercial licence) sumotoy render engine,
 it's a variation of LPGO font render accelleration used in RA8875 (under GNU v3).
-The lines are not blank or filled are passed to the grouping function that is the second part of the accelleration.
+The lines are not blank or filled are passed to the grouping function that is the second part of the accelleration. 
 */
 void TFT_ILI93XX::_glyphRender_unc(
 									const 		_smCharType *pixelsArray,
@@ -2564,7 +2561,7 @@ void TFT_ILI93XX::_glyphRender_unc(
 							foreColor,
 							backColor
 					);
-				} else {
+				} else { 
 					//line render
 					_charLineRender(
 							lineBuffer,
@@ -2593,8 +2590,8 @@ LPGO font render accelleration (GNU v3), part 2, pixel grouping.
 the sumotoy proprietary line render engine, please do not steal
 without author permission since there's currently some licence on it!
 This function group pixels with same color and perform much less memory addressing
-than any other similar function I ever seen.
-Here has been used to avoid multiple memory addressing but can be inproved, the LPGO shines
+than any other similar function I ever seen. 
+Here has been used to avoid multiple memory addressing but can be inproved, the LPGO shines 
 where harware accelleration it's present but this chip has only direct memory access...
 */
 void TFT_ILI93XX::_charLineRender(
@@ -2622,7 +2619,7 @@ void TFT_ILI93XX::_charLineRender(
 				//grouping pixels with same val
 				endPix++;
 			} else {
-
+				
 				if (refPixel) {
 						fillRect_cont(
 						x,
@@ -2632,7 +2629,7 @@ void TFT_ILI93XX::_charLineRender(
 						foreColor,
 						foreColor
 					);
-
+					
 				} else {
 					//do nothing
 				}
@@ -2683,8 +2680,8 @@ void TFT_ILI93XX::_charLineRender(
 #elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	void TFT_ILI93XX::_pushColors_cont(uint16_t data,uint32_t times)
 	{
-		do {
-			writedata16_cont(data);
+		do { 
+			writedata16_cont(data); 
 		} while (--times > 0);
 	}
 #elif defined(ESP8266)
@@ -2713,7 +2710,7 @@ can increase dramatically the amount of code for UNO and similar.
 For this reason some function are now normal for all CPU, this decrease a fraction of the
 overall speed but decrease the amount of space occupied by code.
 In addition, there's an user option to decrease a lot the space, enabled for small resources CPU.
-I'm sorry for the complicated preprocessor #if #else and the amount of code inside library for
+I'm sorry for the complicated preprocessor #if #else and the amount of code inside library for 
 fix this but is the only 'fast way' I found to acieve this!
 --------------------------------------------------------------------------------------------*/
 
@@ -2820,7 +2817,7 @@ void TFT_ILI93XX::printPacket(word data,uint8_t count){
   for (int i=count-1; i>=0; i--){
     if (bitRead(data,i)==1){
       Serial.print("1");
-    }
+    } 
     else {
       Serial.print("0");
     }
