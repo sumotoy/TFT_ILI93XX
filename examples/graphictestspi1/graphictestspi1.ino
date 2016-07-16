@@ -21,17 +21,27 @@
 
 uint8_t errorCode = 0;
 /*
-On K64/K66 there's 3 SPI.
-This examples uses SPI1.
+On Teensy K64/K66 there's 3 SPI.
+------ This examples uses SPI1. ----------------------------------------
 In SPI1 mode only one pin can be associated to CS, so it's virtually impossible
 use 2 pin for SPI FIFO but there's a trick!
 This library has been builded to use CS as less than possible so instead assign CS to setCS
 I have assigned DC pin, the CS pin is drived separately by a standard digitalWriteFast so it can be virtually any pin.
 To trigger the SPI1 you must select MOSI=0,SCLK=32,DC=6 and for CS pin any.
-
+*/
+TFT_ILI93XX tft = TFT_ILI93XX(10,6,255,0,32);
+/*
+-------- Using standard SPI ---------------------------------------------
+Standard SPI is normally selected as default (MOSI=11,SCLK=13) but for some situations you can use
+alternative pins such as: MOSI=7, SCLK=14 (using for example audio shield you'll need this)
+Since the DC and CS pin are drived by SPI_FIFO routines you CANNOT select any pin, this is why
+the getErrorCode exists, it tells you if your pin selection will work or not!
+This is ONLY for Teensy!
+For use standard SPI:
+TFT_ILI93XX tft = TFT_ILI93XX(10,9);
 */
 
-TFT_ILI93XX tft = TFT_ILI93XX(10,6,255,0,32);
+
 
 void setup() {
 Serial.begin(38400);
