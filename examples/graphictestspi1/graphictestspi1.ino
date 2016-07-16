@@ -29,7 +29,7 @@ This library has been builded to use CS as less than possible so instead assign 
 I have assigned DC pin, the CS pin is drived separately by a standard digitalWriteFast so it can be virtually any pin.
 To trigger the SPI1 you must select MOSI=0,SCLK=32,DC=6 and for CS pin any.
 */
-TFT_ILI93XX tft = TFT_ILI93XX(10,6,255,0,32);
+TFT_ILI93XX tft = TFT_ILI93XX(10,6,255,0,32);//will use SPI1!
 /*
 -------- Using standard SPI ---------------------------------------------
 Standard SPI is normally selected as default (MOSI=11,SCLK=13) but for some situations you can use
@@ -38,9 +38,8 @@ Since the DC and CS pin are drived by SPI_FIFO routines you CANNOT select any pi
 the getErrorCode exists, it tells you if your pin selection will work or not!
 This is ONLY for Teensy!
 For use standard SPI:
-TFT_ILI93XX tft = TFT_ILI93XX(10,9);
 */
-
+//TFT_ILI93XX tft = TFT_ILI93XX(10, 9);//will use SPI
 
 
 void setup() {
