@@ -28,7 +28,7 @@
 	*/
 	static const int16_t	TFT_ILI93XX_TFTWIDTH	=	240;
 	static const int16_t	TFT_ILI93XX_TFTHEIGHT 	=	320;
-	static const uint32_t	TFT_ILI93XX_CGRAM		=	TFT_ILI93XX_TFTWIDTH * TFT_ILI93XX_TFTHEIGHT;
+	static const uint32_t	TFT_ILI93XX_CGRAM = uint32_t(TFT_ILI93XX_TFTWIDTH) * uint32_t(TFT_ILI93XX_TFTHEIGHT); //type corrected
 	/* Gamma Set*/
 	#define TFT_ILI93XX_GAMMASET
 	/* Colorspace
